@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iphone-harness"
+version = "0.0.1"
+description = "Direct iPhone control via Appium/XCUITest. The simplest harness to put an LLM agent on a real iPhone."
+requires-python = ">=3.11"
+dependencies = [
+    "Appium-Python-Client>=5.3.1",
+    "selenium>=4.30",
+    "pillow>=10",
+    'pyobjc-framework-Vision>=10 ; sys_platform == "darwin"',
+]
+
+[project.scripts]
+iphone-harness = "iphone_harness.run:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

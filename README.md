@@ -1,4 +1,4 @@
-<img src="docs/banner.jpg" alt="iPhone Harness" width="100%" />
+<img src="docs/banner.png" alt="iPhone Harness" width="100%" />
 
 # iPhone Harness 📱
 

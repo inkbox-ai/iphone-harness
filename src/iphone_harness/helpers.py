@@ -403,7 +403,12 @@ def swipe(x1, y1, x2, y2, duration=0.4):
 
 def scroll(direction="down", x=None, y=None):
     """Scroll the current scroll view. `direction` ∈ {up, down, left, right}.
-    Pass x, y to scroll within a specific element if needed (XCUITest infers if omitted)."""
+    Pass x, y to scroll within a specific element if needed (XCUITest infers if omitted).
+
+    Note: `mobile: scroll` doesn't work in some apps' custom scroll views
+    (X/Twitter, Instagram) because they don't expose a standard XCUIElementTypeScrollView.
+    For those, use `scroll_by(dy=...)` instead — it's gesture-based.
+    """
     args = {"direction": direction}
     if x is not None and y is not None:
         sz = window_size()
@@ -420,6 +425,44 @@ def scroll(direction="down", x=None, y=None):
             swipe(sz["width"] // 4, sz["height"] // 2, sz["width"] * 3 // 4, sz["height"] // 2)
         return
     appium("mobile: scroll", **args)
+
+
+def scroll_by(dy=-400, x=None, y=None, velocity=1200):
+    """Scroll the current view by `dy` pixels using a high-velocity flick gesture.
+
+    `dy` < 0  → scroll DOWN (reveal content below — finger drags up)
+    `dy` > 0  → scroll UP   (reveal content above — finger drags down)
+
+    Uses XCUITest's `mobile: dragFromToWithVelocity` with a fast velocity (default
+    1200pt/sec). The high velocity is critical: iOS classifies a touch as a tap
+    only at low velocities; a fast flick is unambiguously a scroll, so it does
+    NOT trigger taps on whatever cells are under the start point.
+
+    This is the right primitive for **custom-scrollview apps** (X/Twitter,
+    Instagram, TikTok) where `mobile: scroll` returns "no scrollable target" and
+    a normal `swipe()` accidentally taps cells before iOS recognizes the drag.
+
+        scroll_by(dy=-400)                # scroll down ~400pt
+        scroll_by(dy=300)                 # scroll up ~300pt
+        scroll_by(dy=-600, velocity=1500) # bigger jump on a stubborn view
+
+    Returns True (always — call `screenshot()` before/after if you need to
+    verify the scroll actually moved content).
+    """
+    sz = window_size()
+    if x is None: x = sz["width"] // 2
+    if y is None: y = sz["height"] - 150  # start near bottom for natural feel
+    target_y = max(50, min(sz["height"] - 50, y + dy))
+    appium(
+        "mobile: dragFromToWithVelocity",
+        fromX=x, fromY=y,
+        toX=x,   toY=target_y,
+        pressDuration=0.0,   # immediate flick — no press-recognized-as-tap-or-long-press
+        holdDuration=0.0,
+        velocity=velocity,
+    )
+    wait(1.2)  # let momentum scroll settle
+    return True
 
 
 def type_text(text):
@@ -556,6 +599,169 @@ def alert_accept():
 def alert_dismiss():
     """Tap the default Dismiss button (Cancel, Don't Allow, No) on a system alert."""
     appium("mobile: alert", action="dismiss")
+
+
+# ---- control center --------------------------------------------------------
+
+def open_control_center():
+    """Pull down Control Center from the top-right corner. Verifies it opened.
+
+    Detection: when CC is open, the foreground app is `com.apple.springboard`
+    AND a button labeled 'Add Controls' is present in the tree (CC's edit-mode
+    affordance, visible in normal mode too on iOS 18+).
+
+    Raises RuntimeError if CC didn't open after the swipe.
+    """
+    sz = window_size()
+    swipe(sz["width"] - 20, 0, sz["width"] - 20, sz["height"] // 2, duration=0.3)
+    wait(0.8)
+    if not _control_center_is_open():
+        # one retry — sometimes the first swipe is too short to register
+        swipe(sz["width"] - 20, 0, sz["width"] - 20, sz["height"] // 2, duration=0.4)
+        wait(1.0)
+        if not _control_center_is_open():
+            raise RuntimeError("Control Center did not open. Foreground app: " + active_app().get("bundleId", "?"))
+
+
+def close_control_center():
+    """Dismiss Control Center by pressing Home."""
+    appium("mobile: pressButton", name="home")
+    wait(0.4)
+
+
+def _control_center_is_open():
+    if active_app().get("bundleId") != "com.apple.springboard":
+        return False
+    return find(label="Add Controls", type="XCUIElementTypeButton") is not None
+
+
+def ensure_cc_tile(tile_label):
+    """Make sure Control Center has a tile with the given label, installing
+    it if missing. Returns the tile element (for follow-up taps).
+
+    Tile labels match the Add Controls picker exactly: 'Screen Recording',
+    'Flashlight', 'Calculator', 'Timer', 'Camera', 'Magnifier', 'Notes',
+    'Voice Memos', 'Low Power Mode', etc.
+
+    Recipe:
+      1. Open CC if not already open
+      2. If the tile already exists, return it
+      3. Else: tap 'Add Controls' → tap 'Add a Control' → tap the named option → exit edit
+      4. Re-find the tile and return it
+    """
+    if not _control_center_is_open():
+        open_control_center()
+
+    existing = find(label=tile_label, type="XCUIElementTypeButton")
+    if existing:
+        return existing
+
+    # Enter edit mode
+    add_controls = find(label="Add Controls", type="XCUIElementTypeButton")
+    if add_controls is None:
+        raise RuntimeError("'Add Controls' button not found — Control Center may not be open")
+    tap(add_controls)
+    wait(0.8)
+
+    # Tap "Add a Control" — typically at bottom, often in the home-bar zone
+    def find_add_a_control():
+        return find(label="Add a Control", type="XCUIElementTypeButton")
+    add_btn = find_add_a_control()
+    if add_btn is None:
+        raise RuntimeError("'Add a Control' button not visible after entering edit mode")
+    tap_safe(add_btn, refind=find_add_a_control)
+    wait(1.5)
+
+    # Pick the requested tile from the picker
+    tile_option = find(label=tile_label, type="XCUIElementTypeIcon") or \
+                  find(label=tile_label, type="XCUIElementTypeButton")
+    if tile_option is None:
+        raise RuntimeError(
+            f"Tile {tile_label!r} not found in Add Controls picker. "
+            f"Try opening it manually (open_control_center → Add Controls → Add a Control) "
+            f"and check the exact label."
+        )
+    tap(tile_option)
+    wait(1.0)
+
+    # Exit edit mode by tapping a neutral spot
+    sz = window_size()
+    tap_at_xy(sz["width"] // 2, sz["height"] // 3)
+    wait(0.8)
+
+    # Re-find the tile in normal CC view
+    tile = find(label=tile_label, type="XCUIElementTypeButton") or \
+           find(label=tile_label, type="XCUIElementTypeIcon")
+    if tile is None:
+        raise RuntimeError(f"Tile {tile_label!r} was added but is not visible in CC after exiting edit mode")
+    return tile
+
+
+# ---- text injection / credentials ------------------------------------------
+
+def paste_text(text, predicate=None, index=0):
+    """Inject text into a focused (or specified) text field via XCUITest's
+    atomic set_value path. Faster, Unicode-safe, and works on secure fields
+    where `type_text` is too slow / per-char and where `mobile: setPasteboard`
+    is unavailable on real devices.
+
+    If `predicate` is None, defaults to the first focused or first text-input
+    field on screen — useful when iOS just popped an Apple ID password sheet
+    or a Safari URL bar and the keyboard is up.
+
+    For long messages or anything with non-ASCII characters (em-dash, curly
+    quotes, emoji), prefer this over `type_text(...)`.
+    """
+    if predicate is None:
+        # Default: any focused TextField/SecureTextField, or the first one visible.
+        predicate = (
+            "(type == 'XCUIElementTypeTextField' OR "
+            "type == 'XCUIElementTypeSecureTextField') AND "
+            "(value != NULL OR hasKeyboardFocus == 1)"
+        )
+    set_value(predicate, text, index=index)
+
+
+# ---- screen recording ------------------------------------------------------
+
+def start_screen_recording():
+    """Start a screen recording. Installs the CC tile if missing.
+
+    Returns when iOS's 3-second countdown is complete and recording is live.
+    The recording captures everything on the device's screen and saves to
+    Photos when stopped.
+    """
+    open_control_center()
+    tile = ensure_cc_tile("Screen Recording")
+    # Tap the tile (the BUTTON variant — there's also an XCUIElementTypeIcon
+    # at the same position; tapping the button is what toggles recording).
+    btn = find(label="Screen Recording", type="XCUIElementTypeButton")
+    if btn is None:
+        # ensure_cc_tile may have returned the icon variant; click via predicate
+        click("type == 'XCUIElementTypeButton' AND label == 'Screen Recording'")
+    else:
+        tap(btn)
+    close_control_center()
+    # iOS shows a 3-second countdown before the recording actually starts.
+    wait(4.0)
+
+
+def stop_screen_recording():
+    """Stop an in-progress screen recording. Tap the red dot in the status bar
+    and confirm. The video is saved to Photos.
+
+    Raises RuntimeError if no recording is in progress (no Stop alert appeared).
+    """
+    # The status-bar red recording indicator is at the top-left, around (40, 25).
+    tap_at_xy(40, 25)
+    wait(1.5)
+    # Confirm the alert
+    stop_btn = find(label="Stop", type="XCUIElementTypeButton")
+    if stop_btn is None:
+        # Maybe nothing was recording, or the alert path differs
+        raise RuntimeError("Stop confirmation not visible — was a recording actually in progress?")
+    tap(stop_btn)
+    wait(1.5)
 
 
 # ---- agent-helpers hot-load ------------------------------------------------

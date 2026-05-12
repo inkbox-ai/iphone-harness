@@ -68,6 +68,114 @@ def appium(script, **args):
 
 # ---- perception ------------------------------------------------------------
 
+ASSISTIVE_TOUCH_X = 390
+ASSISTIVE_TOUCH_Y = 180
+
+
+def native_screenshot():
+    """Trigger the iPhone's *native* screenshot (the kind that saves to Photos)
+    by tapping the AssistiveTouch floating dot configured for Single-Tap=Screenshot.
+
+    This is what you want for any workflow that needs an image *on the iPhone*
+    (Instagram post, Messages attachment, etc.) — `screenshot()` saves to the
+    Mac's filesystem, but Apple blocks every programmatic path for getting a
+    file INTO the device Photos library. The only reliable autonomous path is:
+
+      1. Display the target content on screen
+      2. Tap the AssistiveTouch dot — iOS captures the screen, saves to Photos
+
+    Prerequisites (one-time setup):
+      - Settings → Accessibility → Touch → AssistiveTouch → On
+      - Settings → Accessibility → Touch → AssistiveTouch → Single-Tap → Screenshot
+      - Dot positioned at default top-right (about x=390, y=180)
+
+    Use `ensure_assistive_touch_screenshot()` to do this setup programmatically
+    on a fresh device.
+
+    iOS hides the dot from the screenshot it produces, so the saved photo is
+    clean — no dot artifact. The dot itself remains visible on screen between
+    captures.
+
+    Override `ASSISTIVE_TOUCH_X` / `ASSISTIVE_TOUCH_Y` if you've moved the dot.
+    """
+    tap_at_xy(ASSISTIVE_TOUCH_X, ASSISTIVE_TOUCH_Y)
+    wait(1.0)  # iOS screenshot animation + write-to-Photos delay
+
+
+def ensure_assistive_touch_screenshot():
+    """One-time setup: enable AssistiveTouch and bind Single-Tap to Screenshot.
+
+    Idempotent — checks current state at each step and only acts when needed.
+    Drives Settings → Accessibility → Touch → AssistiveTouch → toggle ON and
+    Single-Tap → Screenshot.
+
+    After this runs, `native_screenshot()` is callable from any screen, and the
+    floating dot is visible at (ASSISTIVE_TOUCH_X, ASSISTIVE_TOUCH_Y) — defaults
+    to the top-right corner, but iOS lets the user drag it elsewhere.
+
+    Returns True when configuration is confirmed; raises RuntimeError if any
+    step can't be completed (e.g. Settings isn't accessible).
+    """
+    appium("mobile: launchApp", bundleId="com.apple.Preferences")
+    wait(2.5)
+
+    # Back out to Settings root (in case Settings opened deep in last-viewed page)
+    for _ in range(5):
+        btn = find(label="Settings", type="XCUIElementTypeButton")
+        if not btn or btn["y"] > 100:
+            break
+        tap(btn); wait(1.0)
+
+    # Settings root → Accessibility
+    acc = find(label="Accessibility", type="XCUIElementTypeCell") or \
+          find(label="Accessibility", type="XCUIElementTypeButton")
+    if acc is None:
+        raise RuntimeError("Couldn't find Accessibility in Settings. Are you on the Settings root?")
+    tap(acc); wait(2.0)
+
+    # Accessibility → Touch (it lives under PHYSICAL AND MOTOR; usually low on the page)
+    def find_touch():
+        return find(label="Touch", type="XCUIElementTypeCell")
+    touch = find_touch()
+    if touch is None:
+        scroll_by(dy=-400, velocity=400); wait(0.8)
+        touch = find_touch()
+    if touch is None:
+        raise RuntimeError("Couldn't find Touch row under Accessibility.")
+    tap_safe(touch, refind=find_touch); wait(2.0)
+
+    # Touch → AssistiveTouch
+    at_row = find(label="AssistiveTouch", type="XCUIElementTypeCell")
+    if at_row is None:
+        raise RuntimeError("Couldn't find AssistiveTouch row.")
+    tap(at_row); wait(2.0)
+
+    # Toggle AssistiveTouch ON if not already
+    sw = find(label="AssistiveTouch", type="XCUIElementTypeSwitch")
+    if sw is None:
+        raise RuntimeError("Couldn't find AssistiveTouch toggle switch.")
+    if sw.get("value") != "1":
+        tap(sw); wait(1.5)
+
+    # Open Single-Tap action picker
+    tap(find(label="Single-Tap", type="XCUIElementTypeCell")); wait(2.0)
+
+    # The Screenshot row is well below the fold — slow-scroll until visible
+    for _ in range(8):
+        ss = find(label="Screenshot")
+        if ss:
+            break
+        scroll_by(dy=-300, velocity=400); wait(0.8)
+    if ss is None:
+        raise RuntimeError(
+            "Couldn't find 'Screenshot' action in Single-Tap picker — iOS may have "
+            "renamed it or removed it on this version."
+        )
+    tap(ss); wait(1.5)
+
+    return True
+
+
 def screenshot(path=None):
     """Save a PNG screenshot of the current screen. Returns the path.
 

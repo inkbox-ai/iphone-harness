@@ -55,6 +55,35 @@ tap(find(type="XCUIElementTypeButton", name="sendButton"))
 '
 ```
 
+## Skills
+
+### Interaction skills (generic iOS UI mechanics)
+
+| File | What |
+|---|---|
+| [`alerts.md`](interaction-skills/alerts.md) | System vs. in-app alerts; accept/dismiss patterns |
+| [`home-bar-tap-zone.md`](interaction-skills/home-bar-tap-zone.md) | Why taps in the bottom ~80px fail, and how to scroll around it |
+| [`native-screenshot.md`](interaction-skills/native-screenshot.md) | Saving images to Photos via AssistiveTouch (the only reliable path) |
+| [`ocr-fallback.md`](interaction-skills/ocr-fallback.md) | When the accessibility tree fails: Apple Vision OCR via `ocr()` |
+| [`picker-wheels.md`](interaction-skills/picker-wheels.md) | Driving date/time/value picker wheels with `pick_wheel` |
+| [`scroll-into-tappable-zone.md`](interaction-skills/scroll-into-tappable-zone.md) | `tap_safe` and the auto-scroll-out-of-home-bar pattern |
+| [`wait-for-animations.md`](interaction-skills/wait-for-animations.md) | Poll-for-element patterns instead of fixed sleeps |
+
+### Domain skills (per-app playbooks)
+
+| App | Skill | What |
+|---|---|---|
+| **Amazon** (`com.amazon.Amazon`) | [`buy-now.md`](agent-workspace/domain-skills/com.amazon.Amazon/buy-now.md) | One-step reorder via Buy Now; variant disambiguation by purchase count; required pre-purchase confirmation |
+| **Instagram** (`com.burbn.instagram`) | [`navigation.md`](agent-workspace/domain-skills/com.burbn.instagram/navigation.md) | Tab map, search, profile selectors, post action row, edit profile, DM inbox, creation menu, interstitial dismissals |
+| **Instagram** | [`post-photo.md`](agent-workspace/domain-skills/com.burbn.instagram/post-photo.md) | Full create-post flow including photo picker permission dance |
+| **LinkedIn** (`com.linkedin.LinkedIn`) | [`post.md`](agent-workspace/domain-skills/com.linkedin.LinkedIn/post.md) | Text + image post end-to-end |
+| **Messages** (`com.apple.MobileSMS`) | [`send-text.md`](agent-workspace/domain-skills/com.apple.MobileSMS/send-text.md) | Send a text to a phone number or existing conversation |
+| **Messages** | [`tapback-reaction.md`](agent-workspace/domain-skills/com.apple.MobileSMS/tapback-reaction.md) | React to a message with a Tapback (incl. custom emoji) |
+| **Clock** (`com.apple.mobiletimer`) | [`create-alarm.md`](agent-workspace/domain-skills/com.apple.mobiletimer/create-alarm.md) | Add a new alarm with picker-wheel time entry |
+| **Settings** (`com.apple.Preferences`) | [`auto-lock.md`](agent-workspace/domain-skills/com.apple.Preferences/auto-lock.md) | Set Auto-Lock duration |
+
+Domain skill discovery is opt-in: set `IPH_DOMAIN_SKILLS=1` and call `domain_skills(bundle_id)` after launching an app to list matching `.md` files.
+
 ## Architecture
 
 ~700 lines across:
@@ -66,7 +95,7 @@ tap(find(type="XCUIElementTypeButton", name="sendButton"))
 - `src/iphone_harness/_ipc.py` — AF_UNIX JSON-line RPC
 - `agent-workspace/agent_helpers.py` — agent-editable helpers
 - `agent-workspace/domain-skills/<bundleId>/*.md` — per-app skills (opt-in via `IPH_DOMAIN_SKILLS=1`)
-- `interaction-skills/*.md` — reusable iOS UI mechanics (alerts, home-bar tap zone, animations, …)
+- `interaction-skills/*.md` — reusable iOS UI mechanics
 
 ## Public API surface
 

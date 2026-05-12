@@ -1,6 +1,6 @@
 # Instagram — Post a photo
 
-Bundle id: `com.burbn.instagram`. Field-tested 2026-05-11.
+Bundle id: `com.burbn.instagram`. Field-tested on iOS 18.3.2.
 
 End-to-end autonomous photo post: pick from Photos → caption → Share. Assumes the image is already in the iPhone Photos library (use `native_screenshot()` from `interaction-skills/native-screenshot.md` if you need to get it there first).
 
@@ -102,7 +102,3 @@ Plus label-matched buttons: `Next`, `OK`, `Share`, `Done`, `Cancel`, `Limit Acce
 - Editing or deleting an existing post
 
 Add follow-up skill files for those when needed.
-
-## Field-tested example
-
-The first end-to-end autonomous IG post via this flow took ~30 seconds and produced a successful upload with the post-success banner ("Done posting. Want to send it directly to friends?") confirmed.

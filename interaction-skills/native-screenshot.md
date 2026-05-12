@@ -83,7 +83,7 @@ If you need to capture only a *region*, crop the saved photo afterward (load via
 ## Resolution & quality
 
 Native screenshots are at the device's **physical pixel resolution**:
-- 2× device (iPhone 11/XR-class, our test phone): **828×1792**
+- 2× device (iPhone 11/XR-class): **828×1792**
 - 3× device (Pro models): **1242×2688** or similar
 
 iOS saves them as PNG (or HEIC if Settings → Camera → Formats → "High Efficiency" is on). File size typically 200–700 KB.
@@ -110,15 +110,15 @@ wait(2.0)
 
 For more rigorous verification, use the iPhone's "Recently Saved" album — it shows only the photos added in the last week and is the most reliable view to confirm a fresh save.
 
-## Why we have to commit to this trick
+## Why this approach is durable
 
-Apple has been **tightening** Photos-library protection across every iOS release. Each year more programmatic paths get closed (e.g. `mobile: addMediaToLibrary` worked on real devices in earlier XCUITest versions; now it doesn't). **AssistiveTouch is the most durable path** because:
+Apple has been tightening Photos-library write protection across iOS releases. Each year more programmatic paths get closed (`mobile: addMediaToLibrary` worked on real devices in earlier XCUITest versions and does not in current ones). **AssistiveTouch is the most durable path** because:
 
-- It's a documented accessibility feature Apple actively maintains
-- It's invoked by a normal tap event, which the harness can always send
-- It uses Apple's own screenshot pipeline, so output quality + Photos integration are first-class
+- It is a documented accessibility feature Apple actively maintains
+- It is invoked by a normal tap event, which the harness can always send
+- It uses Apple's own screenshot pipeline, so output quality and Photos integration are first-class
 
-Unless Apple removes AssistiveTouch's Screenshot action (which would break a real accessibility use case), this trick should keep working across iOS versions.
+Unless Apple removes AssistiveTouch's Screenshot action — which would break a real accessibility use case — this approach is expected to keep working across iOS versions.
 
 ## Related skills
 

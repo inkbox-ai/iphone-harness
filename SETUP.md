@@ -87,7 +87,7 @@ appium --version           # 3.x
 appium driver list         # xcuitest@10.43.1 should be installed
 ```
 
-### 1.6 Install `uv` (the Python tool we use here)
+### 1.6 Install `uv` (the recommended Python package manager)
 
 ```bash
 brew install uv
@@ -312,7 +312,7 @@ Once trusted, this profile sticks around for ~7 days (free Apple ID). When it ex
 
 ### 5.6 Verify WDA launches
 
-Optional but reassuring: in Xcode, hit `⌘U` again. This time WDA should *actually launch* (a blank/black screen on the iPhone for a moment), then Xcode's test will eventually time out — that's fine, the launch is what we needed to confirm.
+Optional but reassuring: in Xcode, hit `⌘U` again. This time WDA should *actually launch* (a blank/black screen on the iPhone for a moment), then Xcode's test will eventually time out. That's fine — the successful launch is the part to confirm.
 
 ---
 

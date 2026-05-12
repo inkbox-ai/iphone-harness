@@ -37,6 +37,6 @@ wait(0.3)
 tap(find(label="Send"))
 ```
 
-## Don't bother
+## When this isn't an issue
 
-Most stock apps put their bottom toolbar above the home bar already (their bottom edge is `screen_height - 34` not `screen_height - 0`). The tree's `y + h` for a real button is usually safe. The trap is custom-drawn UIs that ignore safe-area insets.
+Most stock apps put their bottom toolbar above the home bar (their bottom edge is `screen_height - 34`, not `screen_height - 0`). The tree's `y + h` for a real button is usually safe. The trap is custom-drawn UIs that ignore safe-area insets.

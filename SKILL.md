@@ -36,7 +36,7 @@ iphone-harness -c '
 
 ## What actually works
 
-- **Tree first, screenshots second.** iOS gives us a rich accessibility tree via `ui_tree()` — use it for action targeting (`find(label='Cancel')`). Use `screenshot()` to verify visual state.
+- **Tree first, screenshots second.** iOS exposes a rich accessibility tree via `ui_tree()` — use it for action targeting (`find(label='Cancel')`). Use `screenshot()` to verify visual state.
 - **Coordinate taps default.** `tap_at_xy(x, y)` goes through SpringBoard, alerts, modals — no foreground-app scoping issue. Pair it with element centers from `find()`: `tap(find(label='Send'))`.
 - **App lifecycle goes through `appium(...)`.** No dedicated wrappers — just call XCUITest directly:
   - `appium("mobile: launchApp", bundleId="com.apple.MobileSMS")` — cold-launch

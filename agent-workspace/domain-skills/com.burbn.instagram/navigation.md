@@ -1,6 +1,6 @@
 # Instagram — Navigation & core selectors
 
-Bundle id: `com.burbn.instagram`. Field-tested 2026-05-11.
+Bundle id: `com.burbn.instagram`. Field-tested on iOS 18.3.2.
 
 Instagram exposes a **clean, stable accessibility id namespace**. Almost every action is reachable by `find(name="...")`. Prefer name-based selectors over coordinates here — Instagram's layout shifts often, but the ids don't.
 
@@ -203,15 +203,21 @@ Use `scroll_by(dy=-700, velocity=1200)` for the feed and any list view. **Do NOT
 
 Instagram doesn't auto-load feed on a slow scroll; medium-fast flicks (`velocity=1200-1500`) work best.
 
-## What I haven't tested
+## Out of scope for this skill
 
-- Posting an actual photo (requires Photos permission, didn't grant)
-- Sending a DM (requires choosing a real recipient + writing real text)
+This document covers the global Instagram namespace (tabs, search, profile,
+post action row, edit-profile form, creation menu, DM inbox). Specific
+end-to-end flows live in companion skill files:
+
+- **Posting a photo** → `post-photo.md`
+
+Not yet documented (add follow-up skill files when these are needed):
+
+- Sending a DM
 - Live video creation
-- Story creation with stickers/text/music
-- Comment composition (the comment field selector — probably `comment-text-input` by analogy with `search-text-input`)
+- Story / Highlights / Reel composition with stickers, text, music
+- Comment composition (the comment field selector is likely
+  `comment-text-input` by analogy with `search-text-input`)
 - Reels swipe-up/swipe-down navigation
 - Account switcher (`user-switch-title-button` tap)
 - Settings menu (via `profile-more-button`)
-
-Add follow-up skill files when you tackle those.

@@ -6,7 +6,7 @@ Wherever iOS shows a vertical scrolling wheel to pick a value (alarms, timers, d
 
 - `mobile: setPickerValue` — **not implemented** in this XCUITest version. Throws `NotImplementedError`. Don't try it.
 - `element.send_keys("6")` on a picker wheel — silent no-op for most wheels. Some accept the visible row label exactly (e.g. minutes wheel sometimes accepts `"30"`) but it's not reliable. Skip it.
-- Raw swipe-to-spin (`swipe(cx, cy, cx, cy + N*32, ...)`) — works in theory; in practice, inertia overshoots and you have to verify+correct in a loop. Don't bother — there's a better tool.
+- Raw swipe-to-spin (`swipe(cx, cy, cx, cy + N*32, ...)`) — works in theory; in practice, inertia overshoots and requires a verify-and-correct loop. Use the iterative API below instead.
 
 ## What works
 

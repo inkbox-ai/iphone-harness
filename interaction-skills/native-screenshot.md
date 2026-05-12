@@ -30,12 +30,20 @@ This is the **only autonomous path** for putting an arbitrary on-screen image in
 Run once per device:
 
 ```python
-ensure_assistive_touch_screenshot()
+set_assistive_touch(on=True)
 ```
 
 This drives Settings → Accessibility → Touch → AssistiveTouch → toggle ON and Single-Tap → Screenshot. Idempotent — re-running on a configured device is a no-op.
 
 After this, the floating dot is visible at the default position (top-right, roughly `(390, 180)` on a 414×896 device). The user can drag it elsewhere; update `ASSISTIVE_TOUCH_X` / `ASSISTIVE_TOUCH_Y` in `helpers.py` if you do.
+
+To disable the dot (cleanup, end-to-end re-test, or when the dot is in the way of a UI you're driving):
+
+```python
+set_assistive_touch(on=False)
+```
+
+The disable path is also what makes this helper proper test infrastructure — turn off → re-enable → verify the whole flow on a "fresh" state. Doctrine-aligned: every helper that changes device state should have a way to put state back.
 
 ## Using it
 

@@ -74,8 +74,8 @@ Pre-imported in every `-c` script. See `helpers.py` for the full list.
 
 ```
 # Perception
-screenshot(path=None)                            → str path
-window_size()                                    → {'width', 'height'}
+screenshot(path=None)                            → str path on Mac (NOT on iPhone)
+window_size()                                    → {'width', 'height'}  (logical points)
 ui_tree(visible_only=False)                      → list[dict]
 find(label=, name=, type=, value=)               → element or None
 find_all(...)                                    → list[element]
@@ -85,6 +85,11 @@ find_text(query, ...)                            → line dict with cx_pt/cy_pt 
 annotated_screenshot(path=None, run_ocr=True)    → (annotated_path, items)
 page_source()                                    → raw XML
 
+# Native screenshot — captures + saves to iPhone Photos library
+# (see interaction-skills/native-screenshot.md for why & how)
+native_screenshot()                              # fires iOS native screenshot via AssistiveTouch dot
+set_assistive_touch(on=True)                     # toggle AssistiveTouch + bind Single-Tap=Screenshot
+
 # Input
 tap_at_xy(x, y)
 tap(element)
@@ -92,12 +97,21 @@ tap_safe(element, refind=callable)               # auto-scrolls out of home-bar 
 double_tap(x, y)
 long_press(x, y, duration=1.0)
 swipe(x1, y1, x2, y2, duration=0.4)
-scroll(direction='down')
+scroll(direction='down')                         # standard mobile: scroll (fails in custom scrollviews)
+scroll_by(dy=-400, x=None, y=None, velocity=1200) # gesture-based; works in X/Instagram-class apps
 type_text(text)
 click(predicate, index=0)                        # real WebDriver click (custom-gesture apps)
 send_keys(predicate, keys, index=0)              # for picker wheels accepting row strings
 set_value(predicate, value, index=0)             # atomic field replace; use for long text
+paste_text(text, predicate=None, index=0)        # convenience wrapper around set_value
 pick_wheel(predicate, target, direction='next')  # iterative spin until value matches
+
+# Control Center & screen recording
+open_control_center()                            # swipe-from-top-right with verify
+close_control_center()                           # press home
+ensure_cc_tile(label)                            # install a CC tile if not present
+start_screen_recording()                         # full flow: open CC, ensure tile, tap, wait 3s
+stop_screen_recording()                          # tap red status-bar dot + confirm
 
 # Device
 unlock()                                         # multi-step: wake + swipe-up
@@ -121,7 +135,7 @@ appium('mobile: launchApp', bundleId='...')
 appium('mobile: activateApp', bundleId='...')
 appium('mobile: terminateApp', bundleId='...')
 appium('mobile: queryAppState', bundleId='...')
-appium('mobile: pressButton', name='home')
+appium('mobile: pressButton', name='home')       # name ∈ {home, volumeup, volumedown}
 appium('mobile: lock')
 appium('mobile: isLocked')
 appium('mobile: activeAppInfo')

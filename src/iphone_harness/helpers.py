@@ -89,8 +89,8 @@ def native_screenshot():
       - Settings → Accessibility → Touch → AssistiveTouch → Single-Tap → Screenshot
       - Dot positioned at default top-right (about x=390, y=180)
 
-    Use `ensure_assistive_touch_screenshot()` to do this setup programmatically
-    on a fresh device.
+    Use `set_assistive_touch(on=True)` to do this setup programmatically on
+    a fresh device, or `set_assistive_touch(on=False)` to clean up after.
 
     iOS hides the dot from the screenshot it produces, so the saved photo is
     clean — no dot artifact. The dot itself remains visible on screen between
@@ -102,35 +102,45 @@ def native_screenshot():
     wait(1.0)  # iOS screenshot animation + write-to-Photos delay
 
 
-def ensure_assistive_touch_screenshot():
-    """One-time setup: enable AssistiveTouch and bind Single-Tap to Screenshot.
+def set_assistive_touch(on=True):
+    """Enable or disable AssistiveTouch. When enabling, also binds Single-Tap
+    to Screenshot so `native_screenshot()` works.
 
-    Idempotent — checks current state at each step and only acts when needed.
-    Drives Settings → Accessibility → Touch → AssistiveTouch → toggle ON and
-    Single-Tap → Screenshot.
+        set_assistive_touch(True)   # turn on + bind to Screenshot
+        set_assistive_touch(False)  # turn off (cleanup after task / re-test)
 
-    After this runs, `native_screenshot()` is callable from any screen, and the
-    floating dot is visible at (ASSISTIVE_TOUCH_X, ASSISTIVE_TOUCH_Y) — defaults
-    to the top-right corner, but iOS lets the user drag it elsewhere.
+    Idempotent — checks the toggle's current state and only acts when needed.
+    Drives Settings → Accessibility → Touch → AssistiveTouch. When `on=True`,
+    additionally opens the Single-Tap picker and selects "Screenshot" if not
+    already chosen.
 
-    Returns True when configuration is confirmed; raises RuntimeError if any
-    step can't be completed (e.g. Settings isn't accessible).
+    The disable path is useful for end-to-end testing: turn off → reset →
+    turn back on to verify the whole setup flow works on a fresh-looking
+    device.
+
+    Returns True when the desired state is confirmed; raises RuntimeError if
+    any navigation step fails.
     """
+    # Terminate first → cold launch lands on Settings root reliably.
+    # (Without this, Settings resumes whatever inner page was last open and
+    # the back-out loop can dead-end on nav bars that don't have a Settings
+    # back button.)
+    appium("mobile: terminateApp", bundleId="com.apple.Preferences")
+    wait(0.8)
     appium("mobile: launchApp", bundleId="com.apple.Preferences")
     wait(2.5)
 
-    # Back out to Settings root (in case Settings opened deep in last-viewed page)
-    for _ in range(5):
-        btn = find(label="Settings", type="XCUIElementTypeButton")
-        if not btn or btn["y"] > 100:
-            break
-        tap(btn); wait(1.0)
-
-    # Settings root → Accessibility
-    acc = find(label="Accessibility", type="XCUIElementTypeCell") or \
-          find(label="Accessibility", type="XCUIElementTypeButton")
+    # Settings root → Accessibility (may need a small scroll-up to find it)
+    def find_acc():
+        return find(label="Accessibility", type="XCUIElementTypeCell") or \
+               find(label="Accessibility", type="XCUIElementTypeButton")
+    acc = find_acc()
     if acc is None:
-        raise RuntimeError("Couldn't find Accessibility in Settings. Are you on the Settings root?")
+        # Scroll up just in case
+        scroll_by(dy=300, velocity=400); wait(0.8)
+        acc = find_acc()
+    if acc is None:
+        raise RuntimeError("Couldn't find Accessibility in Settings.")
     tap(acc); wait(2.0)
 
     # Accessibility → Touch (it lives under PHYSICAL AND MOTOR; usually low on the page)
@@ -150,29 +160,45 @@ def ensure_assistive_touch_screenshot():
         raise RuntimeError("Couldn't find AssistiveTouch row.")
     tap(at_row); wait(2.0)
 
-    # Toggle AssistiveTouch ON if not already
+    # Read the toggle's current state
     sw = find(label="AssistiveTouch", type="XCUIElementTypeSwitch")
     if sw is None:
         raise RuntimeError("Couldn't find AssistiveTouch toggle switch.")
-    if sw.get("value") != "1":
+    currently_on = sw.get("value") == "1"
+    want_on = bool(on)
+
+    # If we want it OFF and it's currently ON → flip the toggle and return.
+    if not want_on:
+        if currently_on:
+            tap(sw); wait(1.5)
+        return True
+
+    # We want it ON. Ensure the toggle is on.
+    if not currently_on:
         tap(sw); wait(1.5)
 
-    # Open Single-Tap action picker
-    tap(find(label="Single-Tap", type="XCUIElementTypeCell")); wait(2.0)
+    # Then ensure Single-Tap is bound to Screenshot.
+    # If the row's secondary text already says "Screenshot", skip the picker.
+    st_row = find(label="Single-Tap", type="XCUIElementTypeCell")
+    if st_row is None:
+        raise RuntimeError("Couldn't find Single-Tap row under AssistiveTouch.")
+    # The row's label includes the currently-selected action when collapsed
+    # (e.g. label='Single-Tap, Screenshot'); but Apple's iOS 18 shows the action
+    # as a sibling element. Always open the picker and confirm.
+    tap(st_row); wait(2.0)
 
-    # The Screenshot row is well below the fold — slow-scroll until visible
+    # Slow-scroll until "Screenshot" is visible (Settings list, alphabetical)
+    ss = find(label="Screenshot")
     for _ in range(8):
-        ss = find(label="Screenshot")
-        if ss:
-            break
+        if ss: break
         scroll_by(dy=-300, velocity=400); wait(0.8)
+        ss = find(label="Screenshot")
     if ss is None:
         raise RuntimeError(
             "Couldn't find 'Screenshot' action in Single-Tap picker — iOS may have "
             "renamed it or removed it on this version."
         )
     tap(ss); wait(1.5)
-
     return True
 
 

@@ -82,6 +82,7 @@ tap(find(type="XCUIElementTypeButton", name="sendButton"))
 | **Messages** | [`tapback-reaction.md`](agent-workspace/domain-skills/com.apple.MobileSMS/tapback-reaction.md) | React to a message with a Tapback (incl. custom emoji) |
 | **Clock** (`com.apple.mobiletimer`) | [`create-alarm.md`](agent-workspace/domain-skills/com.apple.mobiletimer/create-alarm.md) | Add a new alarm with picker-wheel time entry |
 | **Settings** (`com.apple.Preferences`) | [`auto-lock.md`](agent-workspace/domain-skills/com.apple.Preferences/auto-lock.md) | Set Auto-Lock duration |
+| **X** *(formerly Twitter)* (`com.atebits.Tweetie2`) | [`post.md`](agent-workspace/domain-skills/com.atebits.Tweetie2/post.md) | Compose flow, link-preview-card dismissal, image attach via the in-app picker |
 
 Domain skill discovery is opt-in: set `IPH_DOMAIN_SKILLS=1` and call `domain_skills(bundle_id)` after launching an app to list matching `.md` files.
 

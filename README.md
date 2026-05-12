@@ -74,6 +74,7 @@ tap(find(type="XCUIElementTypeButton", name="sendButton"))
 | App | Skill | What |
 |---|---|---|
 | **Amazon** (`com.amazon.Amazon`) | [`buy-now.md`](agent-workspace/domain-skills/com.amazon.Amazon/buy-now.md) | One-step reorder via Buy Now; variant disambiguation by purchase count; required pre-purchase confirmation |
+| **Chess.com** (`com.chess.iphone`) | [`play-a-bot.md`](agent-workspace/domain-skills/com.chess.iphone/play-a-bot.md) | Bot selection, move-entry pattern (`tap piece → tap destination`), reading board state and move list from the accessibility tree, end-game UI |
 | **Instagram** (`com.burbn.instagram`) | [`navigation.md`](agent-workspace/domain-skills/com.burbn.instagram/navigation.md) | Tab map, search, profile selectors, post action row, edit profile, DM inbox, creation menu, interstitial dismissals |
 | **Instagram** | [`post-photo.md`](agent-workspace/domain-skills/com.burbn.instagram/post-photo.md) | Full create-post flow including photo picker permission dance |
 | **LinkedIn** (`com.linkedin.LinkedIn`) | [`post.md`](agent-workspace/domain-skills/com.linkedin.LinkedIn/post.md) | Text + image post end-to-end |
